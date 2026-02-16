@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+.env
+
+# Database
+musica.db
+
+# Node
+frontend/node_modules/
+frontend/build/
+frontend/.env.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Audio fingerprints (large)
+*.db-wal
+*.db-shm

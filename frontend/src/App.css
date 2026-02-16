@@ -1,0 +1,193 @@
+/* ── App Layout ──────────────────────────────────────────────────────────── */
+
+.app {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+/* Animated background glow */
+.bg-glow {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 600px;
+  height: 600px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--primary-glow) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bg-glow.active {
+  opacity: 1;
+  animation: glowPulse 3s ease-in-out infinite;
+}
+
+.bg-glow.found {
+  opacity: 1;
+  background: radial-gradient(circle, rgba(52, 211, 153, 0.2) 0%, transparent 70%);
+  animation: none;
+}
+
+@keyframes glowPulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
+  50%      { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+}
+
+.container {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+
+.header {
+  text-align: center;
+}
+
+.logo {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, var(--primary), #c084fc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.logo-icon {
+  -webkit-text-fill-color: initial;
+  margin-right: 4px;
+}
+
+.tagline {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+/* ── Card ────────────────────────────────────────────────────────────────── */
+
+.card {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 40px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+/* ── Status Text ─────────────────────────────────────────────────────────── */
+
+.status-text {
+  font-size: 1rem;
+  color: var(--text-muted);
+  animation: fadeIn 0.3s ease;
+}
+
+.status-text .duration {
+  color: var(--primary);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.status-text.analyzing {
+  color: var(--primary);
+  animation: pulse-text 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse-text {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.5; }
+}
+
+/* ── No Match / Error ────────────────────────────────────────────────────── */
+
+.no-match,
+.error-box {
+  text-align: center;
+  animation: slideUp 0.4s ease;
+}
+
+.no-match-icon,
+.error-icon {
+  font-size: 2.5rem;
+  margin-bottom: 8px;
+}
+
+.no-match-text {
+  color: var(--text-muted);
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.error-text {
+  color: var(--error);
+  margin-bottom: 16px;
+  line-height: 1.5;
+  font-size: 0.9rem;
+}
+
+.btn-retry {
+  background: var(--surface-hover);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 24px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--font);
+}
+
+.btn-retry:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--primary);
+}
+
+/* ── Stats ───────────────────────────────────────────────────────────────── */
+
+.stats {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+/* ── Utilities ───────────────────────────────────────────────────────────── */
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(16px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  .card { padding: 32px 20px; }
+  .logo { font-size: 1.6rem; }
+}

@@ -1,0 +1,17 @@
+# Musica — Python dependencies
+fastapi>=0.110
+uvicorn[standard]>=0.27
+websockets>=12.0
+python-multipart>=0.0.9
+
+# Audio processing
+librosa>=0.10
+numpy>=1.26
+scipy>=1.12
+soundfile>=0.12
+
+# Metadata extraction
+mutagen>=1.47
+
+# Optional: better audio format support
+pydub>=0.25
