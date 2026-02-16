@@ -220,6 +220,56 @@ def _recognize_audio(audio: np.ndarray, sr: int) -> dict | None:
     }
 
 
+def _recognize_audio_fingerprint_only(audio: np.ndarray, sr: int) -> dict | None:
+    """Synchronous helper — fingerprint matching only (no AI calls)."""
+    fps = generate_fingerprints(audio, sr)
+    if not fps:
+        return None
+    song_id, confidence = find_match(fps, db)  # type: ignore[arg-type]
+    if song_id is None:
+        return None
+    song = db.get_song(song_id)  # type: ignore[union-attr]
+    if song is None:
+        return None
+    song.pop("file_hash", None)
+    song.pop("created_at", None)
+
+    return {
+        "status": "match_found",
+        "song": song,
+        "confidence": round(confidence, 1),
+        "analysis": {},
+        "source": "fingerprint",
+    }
+
+
+def _recognize_audio_ai_only(audio: np.ndarray, sr: int) -> dict | None:
+    """Synchronous helper — AI recognition only (called once as final attempt)."""
+    if not is_configured():
+        return None
+    result = recognize_with_ai(audio, sr)
+    if result:
+        return {"status": "match_found", **result}
+    return None
+
+
+def _enrich_with_ai_analysis(result: dict, audio: np.ndarray, sr: int) -> dict | None:
+    """Enrich fingerprint result with AI-generated analysis."""
+    try:
+        song = result.get("song", {})
+        analysis = analyze_song(
+            title=song.get("title", ""),
+            artist=song.get("artist", ""),
+            album=song.get("album", ""),
+            audio=audio,
+            sr=sr,
+        )
+        result["analysis"] = analysis
+        return result
+    except Exception:
+        return None
+
+
 # ── REST: file upload recognition ────────────────────────────────────────────
 
 @app.post("/api/recognize")
