@@ -1,6 +1,6 @@
 """Musica — Audio fingerprinting engine.
 
-Implements a Shazam‑style algorithm:
+Implements a Shazam-style algorithm:
 1. Compute a spectrogram (STFT).
 2. Detect spectral peaks (local maxima above a threshold).
 3. Pair nearby peaks and hash each pair → (hash, time_offset).
@@ -80,7 +80,7 @@ def find_match(
 
     unique_hashes = list(h2q.keys())
 
-    # Batch DB lookups (SQLite has a 999‑variable limit)
+    # Batch DB lookups (SQLite has a 999-variable limit)
     BATCH = 900
     db_rows: list[tuple[str, int, int]] = []
     for i in range(0, len(unique_hashes), BATCH):
@@ -89,7 +89,7 @@ def find_match(
     if not db_rows:
         return None, 0.0
 
-    # Accumulate offset‑deltas per song
+    # Accumulate offset-deltas per song
     song_deltas: dict[int, list[int]] = defaultdict(list)
     for db_hash, song_id, db_offset in db_rows:
         for q_off in h2q[db_hash]:

@@ -1,0 +1,283 @@
+"""Musica - ACRCloud music recognition.
+
+Uses ACRCloud's official SDK with native fingerprint extraction for
+accurate audio fingerprinting (same technology as Shazam).
+
+The key difference from sending raw audio: we generate a compact
+fingerprint client-side using acrcloud_extr_tool, then send that
+fingerprint to the API. This enables proper fingerprint matching
+instead of falling back to humming/melody matching.
+
+Setup:
+1. Create free account at https://console.acrcloud.com/
+2. Create a project (Audio & Music Recognition)
+3. Copy Host, Access Key, and Access Secret
+4. Set in .env:
+   ACRCLOUD_HOST=identify-eu-west-1.acrcloud.com
+   ACRCLOUD_ACCESS_KEY=your_access_key
+   ACRCLOUD_ACCESS_SECRET=your_access_secret
+"""
+
+from __future__ import annotations
+
+import base64
+import datetime
+import hashlib
+import hmac
+import io
+import json
+import os
+import time
+import urllib.parse
+import urllib.request
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import soundfile as sf
+
+# Official ACRCloud native fingerprint extraction tool
+from acrcloud import acrcloud_extr_tool
+
+# Load .env
+try:
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+except ImportError:
+    pass
+
+# -- Configuration ------------------------------------------------------------
+
+ACRCLOUD_HOST = os.getenv("ACRCLOUD_HOST", "")
+ACRCLOUD_ACCESS_KEY = os.getenv("ACRCLOUD_ACCESS_KEY", "")
+ACRCLOUD_ACCESS_SECRET = os.getenv("ACRCLOUD_ACCESS_SECRET", "")
+
+
+def is_configured() -> bool:
+    """True if ACRCloud credentials are set."""
+    return bool(ACRCLOUD_HOST and ACRCLOUD_ACCESS_KEY and ACRCLOUD_ACCESS_SECRET)
+
+
+def _audio_to_wav_bytes(audio: np.ndarray, sr: int) -> bytes:
+    """Convert numpy audio to WAV bytes suitable for fingerprint extraction."""
+    if audio.ndim > 1:
+        audio = np.mean(audio, axis=1)
+
+    # Skip first 0.5s of mic startup noise
+    skip_samples = min(int(sr * 0.5), len(audio) // 4)
+    audio = audio[skip_samples:]
+
+    # Peak-normalize to ensure good signal level
+    peak = np.max(np.abs(audio))
+    if peak > 0.001:
+        audio = audio / peak * 0.95
+        print(f"[acrcloud] Audio normalized: peak was {peak:.4f}, now 0.95")
+    else:
+        print(f"[acrcloud] WARNING: Audio is nearly silent (peak={peak:.6f})")
+
+    duration = len(audio) / sr
+    print(f"[acrcloud] Audio: {duration:.1f}s, {len(audio)} samples @ {sr} Hz")
+
+    buf = io.BytesIO()
+    sf.write(buf, audio, sr, format="WAV", subtype="PCM_16")
+    buf.seek(0)
+    return buf.read()
+
+
+def _post_multipart(url: str, fields: dict, files: dict, timeout: int = 10) -> str:
+    """Post multipart form data (matches official SDK encoding)."""
+    boundary = f"*****2016.05.27.acrcloud.rec.copyright.{time.time()}*****"
+    CRLF = "\r\n"
+
+    # Build text fields
+    lines = []
+    for key, value in fields.items():
+        lines.append("--" + boundary)
+        lines.append(f'Content-Disposition: form-data; name="{key}"')
+        lines.append("")
+        lines.append(value)
+
+    body = CRLF.join(lines).encode("utf-8")
+
+    # Build file fields
+    for key, value in files.items():
+        file_lines = []
+        file_lines.append(CRLF + "--" + boundary)
+        file_lines.append(f'Content-Disposition: form-data; name="{key}"; filename="{key}"')
+        file_lines.append("Content-Type: application/octet-stream")
+        file_lines.append(CRLF)
+        body = body + CRLF.join(file_lines).encode("ascii") + value
+
+    body = body + (CRLF + "--" + boundary + "--" + CRLF + CRLF).encode("ascii")
+
+    req = urllib.request.Request(url, data=body)
+    req.add_header("Content-Type", f"multipart/form-data; boundary={boundary}")
+
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return resp.read().decode("utf8")
+
+
+def recognize(audio: np.ndarray, sr: int) -> dict[str, Any] | None:
+    """
+    Identify a song using ACRCloud's fingerprinting API.
+
+    Uses the native acrcloud_extr_tool to generate proper audio fingerprints
+    client-side, then sends them to the API for matching.
+    Returns a result dict or None if not identified.
+    """
+    if not is_configured():
+        print("[acrcloud] Not configured - set ACRCLOUD_HOST, ACRCLOUD_ACCESS_KEY, ACRCLOUD_ACCESS_SECRET")
+        return None
+
+    wav_bytes = _audio_to_wav_bytes(audio, sr)
+
+    # Generate audio fingerprint using native tool (this is the key!)
+    # Parameters: (buffer, start_seconds, rec_length, is_db_fingerprint, options)
+    fp_options = {
+        "filter_energy_min": 0,
+        "silence_energy_threshold": 100,
+        "silence_rate_threshold": 1,
+    }
+    fingerprint = acrcloud_extr_tool.create_fingerprint_by_filebuffer(
+        wav_bytes, 0, 0, False, fp_options
+    )
+
+    # Also generate humming fingerprint for fallback
+    humming_fp = acrcloud_extr_tool.create_humming_fingerprint_by_filebuffer(
+        wav_bytes, 0, 0, 2
+    )
+
+    if (not fingerprint or len(fingerprint) < 100) and (not humming_fp or len(humming_fp) < 100):
+        print(f"[acrcloud] Failed to generate fingerprints (fp={len(fingerprint) if fingerprint else 0} bytes, "
+              f"hum={len(humming_fp) if humming_fp else 0} bytes)")
+        return None
+
+    print(f"[acrcloud] Generated fingerprints: audio={len(fingerprint) if fingerprint else 0} bytes, "
+          f"humming={len(humming_fp) if humming_fp else 0} bytes")
+
+    # Build API request with fingerprint data
+    query_type = "fingerprint"
+    http_method = "POST"
+    http_url_file = "/v1/identify"
+    signature_version = "1"
+    timestamp = str(int(time.mktime(
+        datetime.datetime.utcfromtimestamp(time.time()).timetuple()
+    )))
+
+    string_to_sign = (
+        f"{http_method}\n{http_url_file}\n{ACRCLOUD_ACCESS_KEY}\n"
+        f"{query_type}\n{signature_version}\n{timestamp}"
+    )
+    sign = base64.b64encode(
+        hmac.new(
+            ACRCLOUD_ACCESS_SECRET.encode("ascii"),
+            string_to_sign.encode("ascii"),
+            digestmod=hashlib.sha1,
+        ).digest()
+    ).decode("ascii")
+
+    fields = {
+        "access_key": ACRCLOUD_ACCESS_KEY,
+        "sample_bytes": str(len(fingerprint) if fingerprint else 0),
+        "timestamp": timestamp,
+        "signature": sign,
+        "data_type": query_type,
+        "signature_version": signature_version,
+    }
+
+    # Build file data
+    query_data = {}
+    if fingerprint and len(fingerprint) >= 100:
+        query_data["sample"] = fingerprint
+        fields["sample_bytes"] = str(len(fingerprint))
+    if humming_fp and len(humming_fp) >= 100:
+        query_data["sample_hum"] = humming_fp
+        fields["sample_hum_bytes"] = str(len(humming_fp))
+
+    url = f"https://{ACRCLOUD_HOST}{http_url_file}"
+
+    try:
+        result_str = _post_multipart(url, fields, query_data, timeout=10)
+        data = json.loads(result_str)
+    except Exception as e:
+        print(f"[acrcloud] API error: {e}")
+        return None
+
+    print(f"[acrcloud] Response status: {data.get('status', {}).get('code')} - {data.get('status', {}).get('msg')}")
+
+    status = data.get("status", {})
+    if status.get("code") != 0:
+        print(f"[acrcloud] No match: {status.get('msg', 'unknown error')}")
+        return None
+
+    # Parse the music metadata - prefer fingerprint matches over humming
+    metadata = data.get("metadata", {})
+    music_list = metadata.get("music", [])
+    humming_list = metadata.get("humming", [])
+
+    if music_list:
+        match = music_list[0]
+        source_type = "fingerprint"
+        print(f"[acrcloud] Got {len(music_list)} fingerprint match(es)")
+    elif humming_list:
+        match = humming_list[0]
+        source_type = "humming"
+        hum_score = match.get("score", 0)
+        print(f"[acrcloud] Got {len(humming_list)} humming match(es), top score: {hum_score}")
+        if hum_score < 40:
+            print(f"[acrcloud] Humming score too low ({hum_score}), rejecting")
+            return None
+    else:
+        available_keys = list(metadata.keys())
+        print(f"[acrcloud] Status 0 but no matches. Metadata keys: {available_keys}")
+        return None
+    title = match.get("title", "Unknown")
+    artists = match.get("artists", [{}])
+    artist = artists[0].get("name", "Unknown") if artists else "Unknown"
+    album = match.get("album", {}).get("name", "")
+    genres = match.get("genres", [{}])
+    genre = genres[0].get("name", "") if genres else ""
+    release_date = match.get("release_date", "")
+    score = match.get("score", 0)
+    duration_ms = match.get("duration_ms", 0)
+    label = match.get("label", "")
+
+    # External metadata (Spotify, YouTube, etc.)
+    external = match.get("external_metadata", {})
+    spotify = external.get("spotify", {})
+    youtube = external.get("youtube", {})
+
+    # Build artwork URL from Spotify if available
+    artwork_url = ""
+    if spotify and spotify.get("album", {}).get("images"):
+        artwork_url = spotify["album"]["images"][0].get("url", "")
+
+    # Spotify track URL
+    spotify_url = ""
+    if spotify and spotify.get("track", {}).get("id"):
+        spotify_url = f"https://open.spotify.com/track/{spotify['track']['id']}"
+
+    # YouTube URL
+    youtube_url = ""
+    if youtube and youtube.get("vid"):
+        youtube_url = f"https://www.youtube.com/watch?v={youtube['vid']}"
+
+    print(f"[acrcloud] Identified: {title} by {artist} (score: {score})")
+
+    return {
+        "status": "match_found",
+        "song": {
+            "title": title,
+            "artist": artist,
+            "album": album,
+            "genre": genre,
+            "release_date": release_date,
+            "duration": round(duration_ms / 1000, 1) if duration_ms else 0,
+            "label": label,
+            "artwork_url": artwork_url,
+            "spotify_url": spotify_url,
+            "youtube_url": youtube_url,
+        },
+        "confidence": round(score, 1),
+        "source": "acrcloud",
+    }

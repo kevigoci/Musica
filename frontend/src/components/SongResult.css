@@ -277,6 +277,82 @@
   color: var(--text-muted);
 }
 
+/* Tags (category & language) */
+.result-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.tag {
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.tag-category {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(99, 102, 241, 0.15));
+  color: #a78bfa;
+  border: 1px solid rgba(139, 92, 246, 0.25);
+}
+
+.tag-language {
+  background: rgba(52, 211, 153, 0.1);
+  color: #6ee7b7;
+  border: 1px solid rgba(52, 211, 153, 0.2);
+}
+
+/* Fun fact */
+.fun-fact {
+  background: rgba(251, 191, 36, 0.06) !important;
+  border: 1px solid rgba(251, 191, 36, 0.15) !important;
+}
+
+/* Links (Spotify / YouTube) */
+.result-links {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.link-spotify {
+  background: rgba(30, 215, 96, 0.12);
+  color: #1ed760;
+  border: 1px solid rgba(30, 215, 96, 0.25);
+}
+
+.link-spotify:hover {
+  background: rgba(30, 215, 96, 0.2);
+  transform: translateY(-1px);
+}
+
+.link-youtube {
+  background: rgba(255, 0, 0, 0.1);
+  color: #ff4444;
+  border: 1px solid rgba(255, 0, 0, 0.2);
+}
+
+.link-youtube:hover {
+  background: rgba(255, 0, 0, 0.18);
+  transform: translateY(-1px);
+}
+
 /* Again button */
 .btn-again {
   background: linear-gradient(135deg, #6366f1, #8b5cf6);

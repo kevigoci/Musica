@@ -18,11 +18,11 @@ SONGS_DIR = os.getenv("MUSICA_SONGS_DIR", str(BASE_DIR / "songs"))
 SAMPLE_RATE = 22050          # Target sample rate for fingerprinting
 FFT_SIZE = 4096              # FFT window size
 HOP_LENGTH = 2048            # STFT hop length (50% overlap)
-PEAK_NEIGHBORHOOD = 20       # Local‑max filter size (freq × time)
+PEAK_NEIGHBORHOOD = 20       # Local-max filter size (freq × time)
 AMPLITUDE_THRESHOLD = -60    # dB threshold for peak detection
 
 # ── Fingerprint Hashing ──────────────────────────────────────────────────────
-FAN_OUT = 15                 # Number of peak‑pairs per anchor
+FAN_OUT = 15                 # Number of peak-pairs per anchor
 MIN_TIME_DELTA = 0           # Minimum frame delta between paired peaks
 MAX_TIME_DELTA = 200         # Maximum frame delta between paired peaks
 
@@ -30,15 +30,15 @@ MAX_TIME_DELTA = 200         # Maximum frame delta between paired peaks
 RECOGNITION_WINDOW = 8       # Seconds of audio needed before first attempt
 RECOGNITION_INTERVAL = 3     # Seconds between successive recognition attempts
 MIN_MATCH_THRESHOLD = 8      # Minimum aligned hashes for a valid match
-MAX_LISTEN_DURATION = 30     # Maximum seconds before giving up
+MAX_LISTEN_DURATION = 35     # Maximum seconds before giving up
 
 # ── AI Analysis ──────────────────────────────────────────────────────────────
-LLM_API_KEY = os.getenv("MUSICA_LLM_API_KEY", "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")       # OpenAI / compatible key
+LLM_API_KEY = os.getenv("MUSICA_LLM_API_KEY", "")       # OpenAI / compatible key
 LLM_BASE_URL = os.getenv("MUSICA_LLM_BASE_URL", "https://api.openai.com/v1")
 LLM_MODEL = os.getenv("MUSICA_LLM_MODEL", "gpt-4o-mini")
 
 # ── AI Recognition (set at least one) ───────────────────────────────────────
-# MUSICA_OPENAI_API_KEY  → GPT‑4o audio recognition (falls back to MUSICA_LLM_API_KEY)
+# MUSICA_OPENAI_API_KEY  → GPT-4o audio recognition (falls back to MUSICA_LLM_API_KEY)
 # MUSICA_GEMINI_API_KEY  → Gemini 2.0 Flash audio recognition
 
 # ── Server ───────────────────────────────────────────────────────────────────

@@ -31,6 +31,19 @@ export default function SongResult({ song, confidence, analysis, onReset }) {
         </div>
       </div>
 
+      {/* ── Category & Language tags ─────────────────────────────────── */}
+      <div className="result-tags">
+        {ai.category && (
+          <span className="tag tag-category">{ai.category}</span>
+        )}
+        {ai.language && (
+          <span className="tag tag-language">🌍 {ai.language}</span>
+        )}
+        {song.genre && !ai.category && (
+          <span className="tag tag-category">{song.genre}</span>
+        )}
+      </div>
+
       {/* ── Confidence bar ───────────────────────────────────────────── */}
       <div className="confidence">
         <div className="confidence-label">
@@ -49,7 +62,7 @@ export default function SongResult({ song, confidence, analysis, onReset }) {
       {Object.keys(ai).length > 0 && (
         <div className="analysis">
           <h3 className="analysis-heading">
-            <span className="analysis-icon">🧠</span> AI Analysis
+            <span className="analysis-icon">🧠</span> Song Analysis
           </h3>
 
           <div className="analysis-grid">
@@ -76,19 +89,27 @@ export default function SongResult({ song, confidence, analysis, onReset }) {
             )}
           </div>
 
+          {/* What it's about */}
+          {ai.lyrics_meaning && (
+            <div className="analysis-block">
+              <p className="block-label">📝 What It's About</p>
+              <p className="block-text">{ai.lyrics_meaning}</p>
+            </div>
+          )}
+
           {/* Emotional explanation */}
           {ai.emotional_explanation && (
             <div className="analysis-block">
-              <p className="block-label">💡 Emotional Feel</p>
+              <p className="block-label">💡 Musical Style</p>
               <p className="block-text">{ai.emotional_explanation}</p>
             </div>
           )}
 
-          {/* Lyrics meaning */}
-          {ai.lyrics_meaning && (
-            <div className="analysis-block">
-              <p className="block-label">📝 Lyrics & Themes</p>
-              <p className="block-text">{ai.lyrics_meaning}</p>
+          {/* Fun fact */}
+          {ai.fun_fact && (
+            <div className="analysis-block fun-fact">
+              <p className="block-label">⭐ Fun Fact</p>
+              <p className="block-text">{ai.fun_fact}</p>
             </div>
           )}
 
@@ -103,29 +124,31 @@ export default function SongResult({ song, confidence, analysis, onReset }) {
               </ul>
             </div>
           )}
+        </div>
+      )}
 
-          {/* Audio features (from heuristic) */}
-          {ai.audio_features && (
-            <div className="audio-features">
-              {ai.audio_features.tempo_bpm && (
-                <div className="feature-pill">
-                  <span className="pill-label">BPM</span>
-                  <span className="pill-value">{ai.audio_features.tempo_bpm}</span>
-                </div>
-              )}
-              {ai.audio_features.energy !== undefined && (
-                <div className="feature-pill">
-                  <span className="pill-label">Energy</span>
-                  <span className="pill-value">{(ai.audio_features.energy * 100).toFixed(0)}%</span>
-                </div>
-              )}
-              {ai.audio_features.valence !== undefined && (
-                <div className="feature-pill">
-                  <span className="pill-label">Valence</span>
-                  <span className="pill-value">{(ai.audio_features.valence * 100).toFixed(0)}%</span>
-                </div>
-              )}
-            </div>
+      {/* ── Links (Spotify / YouTube) ────────────────────────────────── */}
+      {(song.spotify_url || song.youtube_url) && (
+        <div className="result-links">
+          {song.spotify_url && (
+            <a
+              href={song.spotify_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="link-btn link-spotify"
+            >
+              🎧 Spotify
+            </a>
+          )}
+          {song.youtube_url && (
+            <a
+              href={song.youtube_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="link-btn link-youtube"
+            >
+              ▶️ YouTube
+            </a>
           )}
         </div>
       )}

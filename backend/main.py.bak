@@ -113,37 +113,27 @@ async def ws_recognize(ws: WebSocket) -> None:
                 # Status heartbeat
                 await ws.send_json({"status": "listening", "duration": round(duration, 1)})
 
-                # ACRCloud recognition: first attempt at 12s, retry at 25s
-                should_try_acr = (
-                    not ai_called
-                    and acrcloud.is_configured()
-                    and (
-                        (duration >= 12 and last_process_at < 12)
-                        or (duration >= 25 and last_process_at < 25)
-                    )
-                )
+                # ACRCloud recognition: try after 8 seconds of audio
+                if duration >= 8 and not ai_called:
+                    if not acrcloud.is_configured():
+                        await ws.send_json({
+                            "status": "error",
+                            "message": "ACRCloud not configured. Set ACRCLOUD_HOST, ACRCLOUD_ACCESS_KEY, ACRCLOUD_ACCESS_SECRET in .env",
+                        })
+                        break
 
-                if not ai_called and duration >= 12 and not acrcloud.is_configured():
-                    await ws.send_json({
-                        "status": "error",
-                        "message": "ACRCloud not configured. Set ACRCLOUD_HOST, ACRCLOUD_ACCESS_KEY, ACRCLOUD_ACCESS_SECRET in .env",
-                    })
-                    break
-
-                if should_try_acr:
-                    last_process_at = duration
+                    ai_called = True
                     await ws.send_json({"status": "analyzing"})
                     audio_all = np.concatenate(audio_chunks)
                     result = await asyncio.to_thread(
                         acrcloud.recognize, audio_all, client_sr
                     )
                     if result:
-                        ai_called = True
                         # Enrich with AI analysis if available
                         if ai_is_configured():
                             try:
                                 enriched = await asyncio.to_thread(
-                                    _enrich_with_ai_analysis, result, audio_all, client_sr
+                                    _enrich_with_ai, result, audio_all, client_sr
                                 )
                                 if enriched:
                                     result = enriched
@@ -151,9 +141,22 @@ async def ws_recognize(ws: WebSocket) -> None:
                                 pass
                         await ws.send_json(result)
                         break
-                    elif duration >= 25:
-                        # Second attempt also failed — give up
-                        ai_called = True
+                    else:
+                        # ACRCloud failed - try again with more audio at 20s
+                        ai_called = False
+
+                # Second attempt with more audio
+                if duration >= 20 and not ai_called:
+                    ai_called = True
+                    await ws.send_json({"status": "analyzing"})
+                    audio_all = np.concatenate(audio_chunks)
+                    result = await asyncio.to_thread(
+                        acrcloud.recognize, audio_all, client_sr
+                    )
+                    if result:
+                        await ws.send_json(result)
+                        break
+                    else:
                         await ws.send_json({
                             "status": "no_match",
                             "message": "Could not identify the song. Try again with clearer audio.",
@@ -171,7 +174,7 @@ def _recognize_audio(audio: np.ndarray, sr: int) -> dict | None:
     """Synchronous helper — AI recognition first, fingerprint fallback."""
 
     # ── Primary: AI recognition (identifies any song) ────────────────
-    if ai_is_configured():
+    if is_configured():
         result = recognize_with_ai(audio, sr)
         if result:
             return {"status": "match_found", **result}

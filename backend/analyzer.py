@@ -1,12 +1,12 @@
-"""Musica — AI‑powered song analysis.
+"""Musica — AI-powered song analysis.
 
 After the fingerprint engine identifies a song, this module produces a rich
 analysis including mood, genre blend, emotional explanation, lyrics meaning,
-and similar‑vibes recommendations.
+and similar-vibes recommendations.
 
 Supports two modes:
   1. **OpenAI / compatible API** — set MUSICA_LLM_API_KEY env var
-  2. **Audio‑feature heuristic** — zero‑dependency fallback using librosa
+  2. **Audio-feature heuristic** — zero-dependency fallback using librosa
 """
 
 from __future__ import annotations
@@ -28,6 +28,10 @@ LLM_MODEL = os.getenv("MUSICA_LLM_MODEL", "gpt-4o-mini")
 # ── Public API ───────────────────────────────────────────────────────────────
 
 
+GEMINI_API_KEY = os.getenv("MUSICA_GEMINI_API_KEY", "")
+GEMINI_MODEL = os.getenv("MUSICA_GEMINI_MODEL", "gemini-2.5-flash")
+
+
 def analyze_song(
     title: str,
     artist: str,
@@ -37,23 +41,30 @@ def analyze_song(
 ) -> dict[str, Any]:
     """Return an AI analysis dict for a recognized song.
 
-    Tries the LLM path first; falls back to audio‑feature heuristics.
+    Tries Gemini first, then OpenAI, then heuristic fallback.
     """
-    # Try LLM‑based analysis (richer, needs API key)
+    # Try Gemini analysis (richer, free tier)
+    if GEMINI_API_KEY:
+        try:
+            return _gemini_analysis(title, artist, album)
+        except Exception as e:
+            print(f"[analyzer] Gemini analysis failed: {e}")
+
+    # Try LLM-based analysis (OpenAI)
     if LLM_API_KEY:
         try:
             return _llm_analysis(title, artist, album)
         except Exception:
-            pass  # fall through to heuristic
+            pass
 
-    # Heuristic path — works offline, uses audio features
+    # Heuristic path -- works offline, uses audio features
     return _heuristic_analysis(title, artist, album, audio, sr)
 
 
 # ── LLM path ────────────────────────────────────────────────────────────────
 
 def _llm_analysis(title: str, artist: str, album: str) -> dict[str, Any]:
-    """Call an OpenAI‑compatible chat endpoint for song analysis."""
+    """Call an OpenAI-compatible chat endpoint for song analysis."""
     import urllib.request
 
     prompt = textwrap.dedent(f"""\
@@ -99,6 +110,57 @@ def _llm_analysis(title: str, artist: str, album: str) -> dict[str, Any]:
         raw = raw.split("\n", 1)[1]
         raw = raw.rsplit("```", 1)[0]
     return json.loads(raw)
+
+
+# ── Gemini path ──────────────────────────────────────────────────────────────
+
+def _gemini_analysis(title: str, artist: str, album: str) -> dict[str, Any]:
+    """Call Gemini API for rich song analysis."""
+    import urllib.request
+
+    prompt = textwrap.dedent(f"""\
+        You are a music expert and cultural analyst. Analyze this song in detail.
+
+        Song: "{title}"
+        Artist: "{artist}"
+        Album: "{album or 'Unknown'}" 
+
+        Return ONLY valid JSON (no markdown fences, no extra text) with this structure:
+        {{
+          "mood": "2-4 word mood description (e.g. Energetic and powerful, Melancholic and deep)",
+          "genre_blend": "Primary Genre + Secondary Genre (e.g. Hip-Hop + Trap, Pop + R&B, Rock + Alternative)",
+          "category": "One of: Rap, Pop, Rock, R&B, Electronic, Country, Jazz, Latin, Reggaeton, Folk, Classical, Metal, Indie, K-Pop, Afrobeats, Dancehall, Funk, Soul, Blues, World Music, Turbofolk, Tallava, Manele",
+          "language": "Language the song is sung in (e.g. English, Albanian, Spanish, Turkish)",
+          "emotional_explanation": "2-3 sentences about the emotional feel and musical style of the song",
+          "lyrics_meaning": "2-3 sentences about what the song is about - the story, themes, and message",
+          "fun_fact": "One interesting fact about this song or artist",
+          "similar_vibes": ["Song1 - Artist1", "Song2 - Artist2", "Song3 - Artist3"]
+        }}
+    """)
+
+    body = json.dumps({
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {
+            "temperature": 0.7,
+            "maxOutputTokens": 1024,
+            "responseMimeType": "application/json",
+        },
+    }).encode()
+
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}"
+    req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
+
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        data = json.loads(resp.read())
+
+    raw = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+    if raw.startswith("```"):
+        raw = raw.split("\n", 1)[1]
+        raw = raw.rsplit("```", 1)[0]
+
+    result = json.loads(raw)
+    print(f"[analyzer] Gemini analysis: {result.get('category', '?')} / {result.get('mood', '?')}")
+    return result
 
 
 # ── Heuristic (offline) path ────────────────────────────────────────────────
@@ -179,14 +241,14 @@ def _heuristic_analysis(
     tempo, _ = librosa.beat.beat_track(y=audio, sr=sr)
     tempo_val = float(np.atleast_1d(tempo)[0])
 
-    # RMS energy (0‑1 normalised)
+    # RMS energy (0-1 normalised)
     rms = float(np.mean(librosa.feature.rms(y=audio)))
     energy = min(rms / 0.15, 1.0)
 
     # Spectral centroid (brightness)
     centroid = float(np.mean(librosa.feature.spectral_centroid(y=audio, sr=sr)))
 
-    # Chroma — rough major/minor proxy  (valence‑ish)
+    # Chroma — rough major/minor proxy  (valence-ish)
     chroma = librosa.feature.chroma_cqt(y=audio, sr=sr)
     chroma_std = float(np.std(chroma))
     valence = min(chroma_std / 0.35, 1.0)
@@ -214,7 +276,7 @@ def _heuristic_analysis(
         )
     elif energy > 0.3:
         emo = (
-            f"A mid‑tempo groove at {tempo_val:.0f} BPM gives a {valence_label} "
+            f"A mid-tempo groove at {tempo_val:.0f} BPM gives a {valence_label} "
             "feel, balancing movement with introspection."
         )
     else:
@@ -225,7 +287,7 @@ def _heuristic_analysis(
 
     lyrics = (
         f'"{title}" by {artist} explores themes of '
-        + ("emotional intensity and self‑discovery." if energy > 0.5
+        + ("emotional intensity and self-discovery." if energy > 0.5
            else "reflection, longing, and inner feeling.")
     )
 

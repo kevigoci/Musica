@@ -1,12 +1,12 @@
-"""Musica — AI‑powered music recognition.
+"""Musica - AI-powered music recognition.
 
-Sends captured audio directly to an AI model (GPT‑4o or Gemini) which
-listens to the audio and identifies the song — just like asking a human
-"what song is this?"  One API call returns song ID + rich analysis.
+Sends captured audio directly to an AI model (GPT-4o or Gemini) which
+listens to the audio and identifies the song - just like asking a human
+"what song is this?" One API call returns song ID + rich analysis.
 
-Supported providers (auto‑selected based on which key you set):
-  • MUSICA_OPENAI_API_KEY  → GPT‑4o‑audio (default)
-  • MUSICA_GEMINI_API_KEY  → Gemini 2.0 Flash
+Supported providers (auto-selected based on which key you set):
+    * MUSICA_OPENAI_API_KEY -> GPT-4o-audio (default)
+    * MUSICA_GEMINI_API_KEY -> Gemini 2.0 Flash
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ try:
 except ImportError:
     pass
 
-# ── Configuration ────────────────────────────────────────────────────────────
+# -- Configuration ------------------------------------------------------------
 
 OPENAI_API_KEY = os.getenv("MUSICA_OPENAI_API_KEY", os.getenv("MUSICA_LLM_API_KEY", ""))
 OPENAI_MODEL = os.getenv("MUSICA_OPENAI_MODEL", "gpt-4o-audio-preview")
@@ -38,38 +38,52 @@ OPENAI_MODEL = os.getenv("MUSICA_OPENAI_MODEL", "gpt-4o-audio-preview")
 GEMINI_API_KEY = os.getenv("MUSICA_GEMINI_API_KEY", "")
 GEMINI_MODEL = os.getenv("MUSICA_GEMINI_MODEL", "gemini-2.0-flash")
 
-# ── Shared prompt ────────────────────────────────────────────────────────────
+# -- Shared prompt ------------------------------------------------------------
 
 _SYSTEM_PROMPT = textwrap.dedent("""\
-    You are an expert music recognition AI. You will receive an audio clip.
-    Listen carefully and identify the song.
+     You are Shazam-level music recognition AI. You will receive a raw audio clip
+     recorded from a microphone (so quality may be imperfect - background noise,
+     speaker distortion, etc.). Your job is to identify the EXACT song playing.
 
-    Return ONLY valid JSON (no markdown fences, no extra text) with this structure:
-    {
-      "identified": true,
-      "song": "Song Title",
-      "artist": "Artist Name",
-      "album": "Album Name (or empty string if unknown)",
-      "mood": "2-4 word mood description",
-      "genre_blend": "Genre1 + Genre2",
-      "emotional_explanation": "1-2 sentences about the emotional feel",
-      "lyrics_meaning": "1-2 sentences about lyrical themes",
-      "similar_vibes": ["Song1 - Artist1", "Song2 - Artist2", "Song3 - Artist3"]
-    }
+     CRITICAL RULES:
+     1. LISTEN TO THE ENTIRE CLIP before making a judgment. Even if the beginning
+         is instrumental, vocals may appear later.
+     2. Determine what LANGUAGE is being sung. This is the most important clue.
+     3. The song could be in ANY language: Albanian, Turkish, Arabic, Romanian,
+         Serbian, Bosnian, Greek, Bulgarian, Kurdish, or any other language.
+     4. NEVER default to an English song if the vocals are in another language.
+     5. Even if the audio is noisy or re-recorded from speakers, try your best
+         to identify the melody, rhythm, and any audible lyrics.
+     6. If the clip is mostly instrumental, try to identify based on the melody alone.
+     7. DO NOT say "too short" or "too instrumental" - always make your best guess.
 
-    If you cannot identify the song, return:
-    {"identified": false, "reason": "brief explanation"}
+     Return ONLY valid JSON (no markdown fences, no extra text):
+     {
+        "identified": true,
+        "song": "Song Title (in original language)",
+        "artist": "Artist Name",
+        "album": "Album Name (or empty string if unknown)",
+        "language": "Language of the song (e.g. Albanian, Turkish, etc.)",
+        "mood": "2-4 word mood description",
+        "genre_blend": "Genre1 + Genre2",
+        "emotional_explanation": "1-2 sentences about the emotional feel",
+        "lyrics_meaning": "1-2 sentences about lyrical themes",
+        "similar_vibes": ["Song1 - Artist1", "Song2 - Artist2", "Song3 - Artist3"]
+     }
+
+     If you truly cannot identify the song even with your best guess, return:
+     {"identified": false, "reason": "brief explanation"}
 """)
 
 
-# ── Helpers ──────────────────────────────────────────────────────────────────
+# -- Helpers -----------------------------------------------------------------
 
 def _audio_to_wav_b64(audio: np.ndarray, sr: int) -> str:
-    """Convert numpy audio to base64‑encoded WAV."""
+    """Convert numpy audio to base64-encoded WAV."""
     if audio.ndim > 1:
         audio = np.mean(audio, axis=1)
-    # Trim to last 15 seconds to stay within API limits
-    max_samples = sr * 15
+    # Send all available audio (up to 30 seconds) for best recognition
+    max_samples = sr * 30
     if len(audio) > max_samples:
         audio = audio[-max_samples:]
     buf = io.BytesIO()
@@ -84,11 +98,21 @@ def _parse_ai_response(raw: str) -> dict[str, Any] | None:
     if text.startswith("```"):
         text = text.split("\n", 1)[1] if "\n" in text else text[3:]
         text = text.rsplit("```", 1)[0]
-    try:
-        data = json.loads(text)
-    except json.JSONDecodeError:
-        return None
-    if not data.get("identified"):
+
+    def _try_load_json(payload: str) -> dict[str, Any] | None:
+        try:
+            return json.loads(payload)
+        except json.JSONDecodeError:
+            return None
+
+    data = _try_load_json(text)
+    if data is None:
+        start = text.find("{")
+        end = text.rfind("}")
+        if start != -1 and end != -1 and end > start:
+            data = _try_load_json(text[start : end + 1])
+
+    if not data or not data.get("identified"):
         return None
     return data
 
@@ -100,6 +124,7 @@ def _ai_result_to_response(data: dict[str, Any]) -> dict[str, Any]:
             "title": data.get("song", "Unknown"),
             "artist": data.get("artist", "Unknown"),
             "album": data.get("album", ""),
+            "language": data.get("language", ""),
             "duration": 0,
             "artwork_url": "",
         },
@@ -139,10 +164,10 @@ def get_provider_name() -> str:
     return ""
 
 
-# ── OpenAI GPT‑4o ────────────────────────────────────────────────────────────
+# ── OpenAI GPT-4o ────────────────────────────────────────────────────────────
 
 def _recognize_openai(audio: np.ndarray, sr: int) -> dict[str, Any] | None:
-    """Use GPT‑4o with audio input to identify a song."""
+    """Use GPT-4o with audio input to identify a song."""
     audio_b64 = _audio_to_wav_b64(audio, sr)
 
     body = json.dumps({
@@ -212,7 +237,10 @@ def _recognize_gemini(audio: np.ndarray, sr: int) -> dict[str, Any] | None:
                         "text": (
                             _SYSTEM_PROMPT
                             + "\n\nWhat song is playing in this audio clip? "
-                            "Listen carefully and identify it."
+                            "Listen very carefully to the LANGUAGE of the vocals first, "
+                            "then identify the exact song. Do NOT guess an English song "
+                            "if the vocals are in a different language. "
+                            "Return JSON only, no extra text."
                         ),
                     },
                     {
@@ -225,8 +253,9 @@ def _recognize_gemini(audio: np.ndarray, sr: int) -> dict[str, Any] | None:
             },
         ],
         "generationConfig": {
-            "temperature": 0.3,
-            "maxOutputTokens": 500,
+            "temperature": 0.1,
+            "maxOutputTokens": 2048,
+            "responseMimeType": "application/json",
         },
     }).encode()
 
@@ -242,7 +271,7 @@ def _recognize_gemini(audio: np.ndarray, sr: int) -> dict[str, Any] | None:
     )
 
     try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        with urllib.request.urlopen(req, timeout=60) as resp:
             data = json.loads(resp.read())
     except Exception as e:
         print(f"[recognizer] Gemini error: {e}")
@@ -251,9 +280,13 @@ def _recognize_gemini(audio: np.ndarray, sr: int) -> dict[str, Any] | None:
     try:
         raw = data["candidates"][0]["content"]["parts"][0]["text"]
     except (KeyError, IndexError):
+        print(f"[recognizer] Gemini unexpected response: {data}")
         return None
 
+    print(f"[recognizer] Gemini raw response: {raw}")
     parsed = _parse_ai_response(raw)
     if not parsed:
+        print(f"[recognizer] Gemini: song not identified")
         return None
+    print(f"[recognizer] Gemini identified: {parsed.get('song')} by {parsed.get('artist')} ({parsed.get('language', 'unknown')})")
     return _ai_result_to_response(parsed)
