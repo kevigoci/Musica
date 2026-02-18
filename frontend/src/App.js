@@ -14,6 +14,23 @@ const API_URL =
   process.env.REACT_APP_API_URL ||
   (process.env.NODE_ENV === "development" ? "http://localhost:8000" : "");
 
+/* ── Icons ───────────────────────────────────────────────────────────────── */
+const SearchIcon = () => (
+  <svg className="state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="8"/>
+    <path d="m21 21-4.35-4.35"/>
+    <path d="M11 8v6M8 11h6"/>
+  </svg>
+);
+
+const AlertIcon = () => (
+  <svg className="state-icon state-icon--error" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/>
+    <line x1="12" y1="8" x2="12" y2="12"/>
+    <line x1="12" y1="16" x2="12.01" y2="16"/>
+  </svg>
+);
+
 /* ── State machine ───────────────────────────────────────────────────────── */
 // idle → listening → analyzing → found | not_found | error
 
@@ -186,12 +203,7 @@ export default function App() {
       <div className="container">
         {/* Header */}
         <header className="header">
-          <h1 className="logo">
-            <svg className="logo-icon" viewBox="0 0 24 24" fill="currentColor" width="22" height="22">
-              <path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/>
-            </svg>
-            Musica
-          </h1>
+          <h1 className="logo">Musica</h1>
           <p className="tagline">Identify any song in seconds</p>
         </header>
 
@@ -206,11 +218,11 @@ export default function App() {
           {/* Status text */}
           {status === "listening" && (
             <p className="status-text">
-              Listening… <span className="duration">{duration.toFixed(1)}s</span>
+              Listening... <span className="duration">{duration.toFixed(1)}s</span>
             </p>
           )}
           {status === "analyzing" && (
-            <p className="status-text analyzing">Analyzing audio…</p>
+            <p className="status-text analyzing">Analyzing audio</p>
           )}
 
           {/* Result */}
@@ -226,12 +238,8 @@ export default function App() {
           {/* No match */}
           {status === "not_found" && (
             <div className="no-match">
-              <svg className="state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M8 15s1.5-2 4-2 4 2 4 2"/>
-                <line x1="9" y1="9" x2="9.01" y2="9"/>
-                <line x1="15" y1="9" x2="15.01" y2="9"/>
-              </svg>
+              <SearchIcon />
+              <h3 className="state-title">No Match Found</h3>
               <p className="no-match-text">{error}</p>
               <button className="btn-retry" onClick={reset}>
                 Try Again
@@ -242,11 +250,8 @@ export default function App() {
           {/* Error */}
           {status === "error" && (
             <div className="error-box">
-              <svg className="state-icon state-icon--error" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="8" x2="12" y2="12"/>
-                <line x1="12" y1="16" x2="12.01" y2="16"/>
-              </svg>
+              <AlertIcon />
+              <h3 className="state-title state-title--error">Something Went Wrong</h3>
               <p className="error-text">{error}</p>
               <button className="btn-retry" onClick={reset}>
                 Try Again
@@ -258,8 +263,7 @@ export default function App() {
         {/* Stats */}
         {stats && (
           <p className="stats">
-            {stats.songs} song{stats.songs !== 1 ? "s" : ""} indexed •{" "}
-            {stats.fingerprints.toLocaleString()} fingerprints
+            {stats.songs} song{stats.songs !== 1 ? "s" : ""} indexed • {stats.fingerprints.toLocaleString()} fingerprints
           </p>
         )}
       </div>

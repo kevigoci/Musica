@@ -1,20 +1,3 @@
-#!/usr/bin/env python3
-"""Musica — Song ingestion script.
-
-Index audio files into the fingerprint database so they can be recognized.
-
-Usage
-─────
-    # Index every audio file under the songs/ directory
-    python ingest.py songs/
-
-    # Index a single file with explicit metadata
-    python ingest.py track.mp3 --title "Bohemian Rhapsody" --artist "Queen" --album "A Night at the Opera"
-
-    # Show database stats
-    python ingest.py --stats
-"""
-
 from __future__ import annotations
 
 import argparse

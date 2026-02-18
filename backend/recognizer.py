@@ -1,14 +1,3 @@
-"""Musica - AI-powered music recognition.
-
-Sends captured audio directly to an AI model (GPT-4o or Gemini) which
-listens to the audio and identifies the song - just like asking a human
-"what song is this?" One API call returns song ID + rich analysis.
-
-Supported providers (auto-selected based on which key you set):
-    * MUSICA_OPENAI_API_KEY -> GPT-4o-audio (default)
-    * MUSICA_GEMINI_API_KEY -> Gemini 2.0 Flash
-"""
-
 from __future__ import annotations
 
 import base64

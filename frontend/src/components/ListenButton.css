@@ -5,7 +5,32 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
+}
+
+/* Outer glow */
+.listen-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 160px;
+  height: 160px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(108, 92, 231, 0.25) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.listen-glow.active {
+  opacity: 1;
+  animation: glowPulse 2s ease-in-out infinite;
+}
+
+@keyframes glowPulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+  50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
 }
 
 /* Pulse rings */
@@ -46,13 +71,13 @@
   justify-content: center;
   background: var(--accent);
   color: #fff;
-  box-shadow: 0 4px 20px rgba(108, 92, 231, 0.3);
+  box-shadow: 0 4px 24px rgba(108, 92, 231, 0.35);
   transition: all 0.2s ease;
 }
 
 .listen-btn:hover {
   transform: scale(1.05);
-  box-shadow: 0 6px 28px rgba(108, 92, 231, 0.4);
+  box-shadow: 0 6px 32px rgba(108, 92, 231, 0.45);
 }
 
 .listen-btn:active {
@@ -61,7 +86,11 @@
 
 .listen-btn.active {
   background: var(--red);
-  box-shadow: 0 4px 20px rgba(255, 82, 82, 0.3);
+  box-shadow: 0 4px 24px rgba(255, 82, 82, 0.35);
+}
+
+.listen-btn.active .pulse-ring {
+  border-color: var(--red);
 }
 
 .listen-btn.done {
@@ -71,17 +100,24 @@
   transition: all 0.3s ease;
 }
 
+/* Button content */
+.btn-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* Icons */
-.icon-mic,
-.icon-stop {
-  width: 36px;
-  height: 36px;
+.btn-icon {
+  width: 40px;
+  height: 40px;
+  color: #fff;
 }
 
 /* Label */
 .listen-label {
   color: var(--text-muted);
-  font-size: 0.825rem;
+  font-size: 0.875rem;
   font-weight: 500;
   animation: fadeIn 0.3s ease;
 }
@@ -89,4 +125,22 @@
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive */
+@media (max-width: 380px) {
+  .listen-btn {
+    width: 100px;
+    height: 100px;
+  }
+  .pulse-ring {
+    width: 100px;
+    height: 100px;
+    margin-top: -50px;
+    margin-left: -50px;
+  }
+  .btn-icon {
+    width: 36px;
+    height: 36px;
+  }
 }

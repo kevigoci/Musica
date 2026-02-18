@@ -1,16 +1,3 @@
-"""Musica — FastAPI application.
-
-Endpoints
-─────────
-WS   /ws/recognize         Real-time microphone recognition
-POST /api/recognize         Upload a file for recognition
-POST /api/songs             Add a new song to the database
-GET  /api/songs             List all indexed songs
-DEL  /api/songs/{id}        Remove a song
-GET  /api/stats             Database statistics
-GET  /api/health            Health check
-"""
-
 from __future__ import annotations
 
 import asyncio

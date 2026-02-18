@@ -1,9 +1,3 @@
-"""Musica — SQLite database layer.
-
-Uses synchronous sqlite3 (fast enough for an MVP).  For production,
-swap to aiosqlite or PostgreSQL.
-"""
-
 from __future__ import annotations
 
 import sqlite3

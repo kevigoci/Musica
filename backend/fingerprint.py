@@ -1,12 +1,3 @@
-"""Musica — Audio fingerprinting engine.
-
-Implements a Shazam-style algorithm:
-1. Compute a spectrogram (STFT).
-2. Detect spectral peaks (local maxima above a threshold).
-3. Pair nearby peaks and hash each pair → (hash, time_offset).
-4. Match query hashes against the database using offset alignment.
-"""
-
 from __future__ import annotations
 
 import hashlib
