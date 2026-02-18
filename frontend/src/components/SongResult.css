@@ -1,366 +1,273 @@
 /* ── SongResult ──────────────────────────────────────────────────────────── */
 
-.result {
+.sr {
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  animation: resultAppear 0.4s ease;
+  gap: 0;
+  animation: srIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes resultAppear {
-  from { transform: translateY(16px); opacity: 0; }
-  to   { transform: translateY(0); opacity: 1; }
+@keyframes srIn {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
 }
 
-/* ── Hero Card ───────────────────────────────────────────────────────────── */
+/* ── Artwork ─────────────────────────────────────────────────────────────── */
 
-.result-hero {
-  width: 100%;
-  border-radius: var(--radius);
-  overflow: hidden;
-  border: 1px solid var(--border);
-  background: var(--surface);
-}
-
-.result-hero-media {
+.sr-art-wrap {
   position: relative;
-  width: 100%;
-  padding-top: 56.25%;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+  margin-bottom: 20px;
 }
 
-.result-hero-media.empty {
-  background: var(--surface-hover);
-}
-
-.result-hero-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    0deg,
-    rgba(17, 17, 22, 0.95) 0%,
-    rgba(17, 17, 22, 0.4) 50%,
-    rgba(17, 17, 22, 0.05) 100%
-  );
-}
-
-.result-hero-fallback {
-  position: absolute;
-  inset: 0;
+.sr-art {
+  width: 130px;
+  height: 130px;
+  border-radius: 20px;
+  object-fit: cover;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 3.5rem;
-  font-weight: 700;
-  color: var(--accent);
-  opacity: 0.3;
-  z-index: 1;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
 }
 
-.result-hero-content {
+.sr-art--init {
+  font-size: 3rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  user-select: none;
+}
+
+.sr-conf {
   position: absolute;
-  left: 16px;
-  right: 16px;
-  bottom: 16px;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-/* Badge inside hero */
-.result-badge {
-  display: inline-flex;
-  align-items: center;
-  align-self: flex-start;
-  gap: 5px;
-  background: rgba(0, 200, 83, 0.15);
-  color: var(--green);
-  padding: 3px 10px;
-  border-radius: 4px;
-  font-size: 0.65rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  margin-bottom: 6px;
-}
-
-.result-hero-title {
-  font-size: 1.25rem;
-  font-weight: 700;
+  bottom: -8px;
+  right: -8px;
+  background: var(--green);
   color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 200, 83, 0.35);
+}
+
+/* ── Song info ───────────────────────────────────────────────────────────── */
+
+.sr-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text);
+  text-align: center;
   line-height: 1.25;
+  margin-bottom: 4px;
 }
 
-.result-hero-artist {
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.7);
+.sr-artist {
+  font-size: 0.95rem;
+  color: var(--accent-light);
   font-weight: 500;
+  text-align: center;
+  margin-bottom: 2px;
 }
 
-.result-hero-album {
+.sr-album {
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--text-muted);
+  text-align: center;
 }
 
-/* Meta bar under the image */
-.result-meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 16px;
-  border-top: 1px solid var(--border);
-  background: var(--bg-elevated);
-}
+/* ── Tags ────────────────────────────────────────────────────────────────── */
 
-.result-meta-left {
+.sr-tags {
   display: flex;
-  gap: 6px;
   flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 14px;
+  margin-bottom: 16px;
 }
 
-.result-meta-right {
-  flex-shrink: 0;
-}
-
-/* Tags */
-.tag {
-  padding: 3px 10px;
-  border-radius: 4px;
+.sr-tag {
+  padding: 4px 12px;
+  border-radius: 100px;
   font-size: 0.7rem;
   font-weight: 600;
-  letter-spacing: 0.02em;
-}
-
-.tag-category {
   background: var(--accent-bg);
   color: var(--accent-light);
-  border: 1px solid rgba(108, 92, 231, 0.2);
+  border: 1px solid rgba(108, 92, 231, 0.18);
 }
 
-.tag-language {
+.sr-tag--alt {
   background: var(--green-bg);
   color: var(--green);
-  border: 1px solid rgba(0, 200, 83, 0.15);
+  border-color: rgba(0, 200, 83, 0.15);
 }
 
-/* Confidence inline */
-.confidence-value {
-  font-size: 0.75rem;
-  color: var(--green);
-  font-weight: 700;
+.sr-tag--dim {
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  border-color: var(--border);
 }
 
-/* ── Links ───────────────────────────────────────────────────────────────── */
+/* ── Action links ────────────────────────────────────────────────────────── */
 
-.result-links {
+.sr-links {
   display: flex;
   gap: 8px;
   width: 100%;
+  margin-bottom: 8px;
 }
 
-.link-btn {
+.sr-link {
   flex: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 10px 0;
-  border-radius: var(--radius-sm);
-  font-size: 0.8rem;
+  gap: 7px;
+  padding: 11px 0;
+  border-radius: 10px;
+  font-size: 0.82rem;
   font-weight: 600;
   text-decoration: none;
-  transition: all 0.15s ease;
+  transition: filter 0.15s;
 }
 
-.link-spotify {
+.sr-link--spotify {
   background: #1db954;
   color: #fff;
 }
 
-.link-spotify:hover {
-  background: #1ed760;
-}
-
-.link-youtube {
+.sr-link--yt {
   background: #ff0000;
   color: #fff;
 }
 
-.link-youtube:hover {
-  background: #ff2222;
+.sr-link:hover {
+  filter: brightness(1.12);
 }
 
-/* ── Analysis Section ────────────────────────────────────────────────────── */
+/* ── Analysis ────────────────────────────────────────────────────────────── */
 
-.analysis {
+.sr-analysis {
   width: 100%;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  animation: slideUp 0.35s ease 0.1s both;
+  gap: 12px;
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
 }
 
-@keyframes slideUp {
-  from { transform: translateY(10px); opacity: 0; }
-  to   { transform: translateY(0); opacity: 1; }
-}
-
-.analysis-heading {
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin: 0;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--border);
-}
-
-/* Mood + Genre chips */
-.analysis-grid {
+.sr-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
 
-.analysis-chip {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.sr-stat {
   background: var(--bg-elevated);
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 10px 12px;
-}
-
-.chip-icon {
-  color: var(--accent-light);
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-}
-
-.chip-body {
+  border-radius: 10px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
-  min-width: 0;
+  gap: 3px;
 }
 
-.chip-label {
+.sr-stat-label {
   font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.sr-stat-val {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.sr-block {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.sr-block-title {
+  font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-muted);
   font-weight: 600;
 }
 
-.chip-value {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Text blocks */
-.analysis-block {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.block-label {
-  font-size: 0.65rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.block-text {
-  font-size: 0.825rem;
-  line-height: 1.55;
+.sr-block-text {
+  font-size: 0.84rem;
+  line-height: 1.6;
   color: var(--text-secondary);
 }
 
-/* Fun fact */
-.fun-fact {
-  background: var(--yellow-bg) !important;
-  border: 1px solid rgba(255, 193, 7, 0.12) !important;
-  border-radius: var(--radius-sm);
-  padding: 10px 12px;
+.sr-block--highlight {
+  background: var(--yellow-bg);
+  border: 1px solid rgba(255, 193, 7, 0.12);
+  border-radius: 10px;
+  padding: 12px 14px;
 }
 
-/* Similar vibes */
-.similar-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+.sr-similar {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.similar-item {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  padding: 6px 10px;
-  background: var(--bg-elevated);
-  border-radius: 6px;
-  border: 1px solid var(--border);
-}
-
-/* Duration */
-.result-duration {
-  font-size: 0.7rem;
-  color: var(--text-muted);
-}
-
-/* Again button */
-.btn-again {
-  display: inline-flex;
-  align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
+}
+
+.sr-similar-pill {
+  font-size: 0.78rem;
+  padding: 5px 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* ── Reset button ────────────────────────────────────────────────────────── */
+
+.sr-reset {
+  margin-top: 18px;
   background: var(--accent);
   border: none;
-  color: white;
-  padding: 11px 24px;
-  border-radius: var(--radius-sm);
-  font-size: 0.875rem;
+  color: #fff;
+  padding: 12px 32px;
+  border-radius: 10px;
+  font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
   font-family: var(--font);
+  transition: background 0.15s, transform 0.1s;
 }
 
-.btn-again:hover {
+.sr-reset:hover {
   background: var(--accent-light);
 }
 
-.btn-again:active {
-  transform: scale(0.98);
+.sr-reset:active {
+  transform: scale(0.97);
 }
 
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 
 @media (max-width: 380px) {
-  .analysis-grid {
+  .sr-row {
     grid-template-columns: 1fr;
   }
-  .analysis {
-    padding: 12px;
+  .sr-art {
+    width: 110px;
+    height: 110px;
   }
-  .result-hero-title {
-    font-size: 1.1rem;
+  .sr-title {
+    font-size: 1.15rem;
   }
 }
