@@ -187,7 +187,10 @@ export default function App() {
         {/* Header */}
         <header className="header">
           <h1 className="logo">
-            <span className="logo-icon">🎵</span> Musica
+            <svg className="logo-icon" viewBox="0 0 24 24" fill="currentColor" width="22" height="22">
+              <path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/>
+            </svg>
+            Musica
           </h1>
           <p className="tagline">Identify any song in seconds</p>
         </header>
@@ -223,7 +226,12 @@ export default function App() {
           {/* No match */}
           {status === "not_found" && (
             <div className="no-match">
-              <p className="no-match-icon">🤷</p>
+              <svg className="state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M8 15s1.5-2 4-2 4 2 4 2"/>
+                <line x1="9" y1="9" x2="9.01" y2="9"/>
+                <line x1="15" y1="9" x2="15.01" y2="9"/>
+              </svg>
               <p className="no-match-text">{error}</p>
               <button className="btn-retry" onClick={reset}>
                 Try Again
@@ -234,7 +242,11 @@ export default function App() {
           {/* Error */}
           {status === "error" && (
             <div className="error-box">
-              <p className="error-icon">⚠️</p>
+              <svg className="state-icon state-icon--error" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
               <p className="error-text">{error}</p>
               <button className="btn-retry" onClick={reset}>
                 Try Again
