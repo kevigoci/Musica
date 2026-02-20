@@ -25,7 +25,13 @@ import numpy as np
 import soundfile as sf
 
 # Official ACRCloud SDK
-from acrcloud.recognizer import ACRCloudRecognizer, ACRCloudRecognizeType
+try:
+    from acrcloud.recognizer import ACRCloudRecognizer, ACRCloudRecognizeType
+    _sdk_available = True
+except ImportError:
+    ACRCloudRecognizer = Any  # type: ignore[assignment]
+    ACRCloudRecognizeType = None  # type: ignore[assignment]
+    _sdk_available = False
 
 # Load .env
 try:
@@ -46,12 +52,14 @@ _recognizer: ACRCloudRecognizer | None = None
 
 def is_configured() -> bool:
     """True if ACRCloud credentials are set."""
-    return bool(ACRCLOUD_HOST and ACRCLOUD_ACCESS_KEY and ACRCLOUD_ACCESS_SECRET)
+    return bool(_sdk_available and ACRCLOUD_HOST and ACRCLOUD_ACCESS_KEY and ACRCLOUD_ACCESS_SECRET)
 
 
 def _get_recognizer() -> ACRCloudRecognizer:
     """Get or create the ACRCloud recognizer instance."""
     global _recognizer
+    if not _sdk_available:
+        raise RuntimeError("ACRCloud SDK not installed")
     if _recognizer is None:
         config = {
             "host": ACRCLOUD_HOST,
@@ -102,7 +110,10 @@ def recognize(audio: np.ndarray, sr: int) -> dict[str, Any] | None:
     Returns a result dict or None if not identified.
     """
     if not is_configured():
-        print("[acrcloud] Not configured - set ACRCLOUD_HOST, ACRCLOUD_ACCESS_KEY, ACRCLOUD_ACCESS_SECRET")
+        if not _sdk_available:
+            print("[acrcloud] SDK not available - install the official ACRCloud SDK package")
+        else:
+            print("[acrcloud] Not configured - set ACRCLOUD_HOST, ACRCLOUD_ACCESS_KEY, ACRCLOUD_ACCESS_SECRET")
         return None
 
     wav_bytes = _audio_to_wav_bytes(audio, sr)
