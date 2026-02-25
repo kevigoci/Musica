@@ -1,4 +1,4 @@
-# 🎵 Musica — Shazam-like Music Recognition
+# Musica — Shazam-like Music Recognition
 
 A real-time music recognition web app that identifies songs from microphone audio using audio fingerprinting. Built with **FastAPI** (Python) and **React**.
 
